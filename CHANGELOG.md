@@ -9,7 +9,6 @@
    * FIXED: Add string for Use:kPedestrianCrossing to fix null output in to_string(Use). [#3416](https://github.com/valhalla/valhalla/pull/3416)
 
 * **Enhancement**
-   * ADDED: Ondemand elevation tile fetching [#3391(https://github.com/valhalla/valhalla/pull/3391)
    * CHANGED: Pronunciation for names and destinations [#3132](https://github.com/valhalla/valhalla/pull/3132)
    * CHANGED: Requested code clean up for phonemes PR [#3356](https://github.com/valhalla/valhalla/pull/3356)
    * CHANGED: Refactor Pronunciation class to struct [#3359](https://github.com/valhalla/valhalla/pull/3359)
@@ -22,6 +21,7 @@
    * CHANGED: Do not create statsd client in workers if it is not configured [#3394](https://github.com/valhalla/valhalla/pull/3394)
    * ADDED: Import of Bike Share Stations information in BSS Connection edges [#3411](https://github.com/valhalla/valhalla/pull/3411)
    * ADDED: Add heading to PathEdge to be able to return it on /locate [#3399](https://github.com/valhalla/valhalla/pull/3399)
+   * ADDED: On-demand elevation tile fetching [#3391](https://github.com/valhalla/valhalla/pull/3391)
 
 ## Release Date: 2021-10-07 Valhalla 3.1.4
 * **Removed**

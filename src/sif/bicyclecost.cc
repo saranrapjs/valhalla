@@ -32,6 +32,7 @@ constexpr float kDefaultBssPenalty = 0.0f;    // Seconds
 
 // Other options
 constexpr float kDefaultUseRoad = 0.25f;          // Factor between 0 and 1
+constexpr float kDefaultUseOneways = 0.0f;
 constexpr float kDefaultAvoidBadSurfaces = 0.25f; // Factor between 0 and 1
 constexpr float kDefaultUseLivingStreets = 0.5f;  // Factor between 0 and 1
 const std::string kDefaultBicycleType = "Hybrid"; // Bicycle type
@@ -201,6 +202,7 @@ constexpr float kBicycleNetworkFactor = 0.95f;
 // Valid ranges and defaults
 constexpr ranged_default_t<float> kUseRoadRange{0.0f, kDefaultUseRoad, 1.0f};
 constexpr ranged_default_t<float> kUseHillsRange{0.0f, kDefaultUseHills, 1.0f};
+constexpr ranged_default_t<float> kUseOnewaysRange{kDefaultUseOneways, 1.0f};
 constexpr ranged_default_t<float> kAvoidBadSurfacesRange{0.0f, kDefaultAvoidBadSurfaces, 1.0f};
 
 constexpr ranged_default_t<float> kBSSCostRange{0, kDefaultBssCost, kMaxPenalty};
@@ -379,6 +381,7 @@ public:
 
   std::vector<float> speedfactor_; // Cost factors based on speed in kph
   float use_roads_;                // Preference of using roads between 0 and 1
+  float use_oneways_;              // Preference towards one-ways between 0 and 1
   float avoid_roads_;              // Inverse of use roads
   float road_factor_;              // Road factor based on use_roads_
   float sidepath_factor_;          // Factor to use when use_sidepath is set on an edge
@@ -459,6 +462,7 @@ BicycleCost::BicycleCost(const CostingOptions& costing_options)
   avoid_bad_surfaces_ = costing_options.avoid_bad_surfaces();
   minimal_surface_penalized_ = kWorstAllowedSurface[static_cast<uint32_t>(type_)];
   worst_allowed_surface_ = avoid_bad_surfaces_ == 1.0f ? minimal_surface_penalized_ : Surface::kPath;
+  use_oneways_ = 1.0f - costing_options.use_oneways();
 
   // Set the surface speed factors for the bicycle type.
   if (type_ == BicycleType::kRoad) {
@@ -661,6 +665,11 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
     accommodation_factor += sidepath_factor_;
   }
 
+  bool oneway = (edge->reverseaccess() & kVehicularAccess) == 0;
+  if (oneway && edge->lanecount() == 1) {
+    accommodation_factor *= use_oneways_;
+  }
+
   // Favor bicycle networks slightly
   if (edge->bike_network()) {
     accommodation_factor *= kBicycleNetworkFactor;
@@ -842,7 +851,7 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
   pbf_costing_options->set_costing(Costing::bicycle);
   pbf_costing_options->set_name(Costing_Enum_Name(pbf_costing_options->costing()));
   auto json_costing_options = rapidjson::get_child_optional(doc, costing_options_key.c_str());
-
+  LOG_INFO(costing_options_key);
   if (json_costing_options) {
     ParseSharedCostOptions(*json_costing_options, pbf_costing_options);
     ParseBaseCostOptions(*json_costing_options, pbf_costing_options, kBaseCostOptsConfig);
@@ -853,6 +862,11 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
     pbf_costing_options->set_use_roads(
         kUseRoadRange(rapidjson::get_optional<float>(*json_costing_options, "/use_roads")
                           .get_value_or(kDefaultUseRoad)));
+
+    // use_oneways
+    pbf_costing_options->set_use_oneways(
+        kUseOnewaysRange(rapidjson::get_optional<float>(*json_costing_options, "/use_oneways")
+                          .get_value_or(kDefaultUseOneways)));
 
     // use_hills
     pbf_costing_options->set_use_hills(
@@ -902,10 +916,12 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
         rapidjson::get_optional<uint32_t>(*json_costing_options, "/bss_return_penalty")
             .get_value_or(kDefaultBssPenalty)));
   } else {
+    LOG_INFO("thereeeee");
     // Set pbf values to defaults
     SetDefaultBaseCostOptions(pbf_costing_options, kBaseCostOptsConfig);
 
     pbf_costing_options->set_use_roads(kDefaultUseRoad);
+    pbf_costing_options->set_use_oneways(1.0f);
     pbf_costing_options->set_use_hills(kDefaultUseHills);
     pbf_costing_options->set_avoid_bad_surfaces(kDefaultAvoidBadSurfaces);
     pbf_costing_options->set_transport_type(kDefaultBicycleType);

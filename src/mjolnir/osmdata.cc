@@ -18,6 +18,7 @@ namespace {
 const std::string count_file = "osmdata_counts.bin";
 const std::string restrictions_file = "osmdata_restrictions.bin";
 const std::string viaset_file = "osmdata_viaset.bin";
+const std::string busset_file = "osmdata_busset.bin";
 const std::string access_restrictions_file = "osmdata_access_restrictions.bin";
 const std::string bike_relations_file = "osmdata_bike_relations.bin";
 const std::string way_ref_file = "osmdata_way_refs.bin";
@@ -114,6 +115,30 @@ bool write_viaset(const std::string& filename, const ViaSet& via_set) {
   uint32_t sz = via_vector.size();
   file.write(reinterpret_cast<const char*>(&sz), sizeof(uint32_t));
   file.write(reinterpret_cast<const char*>(via_vector.data()), via_vector.size() * sizeof(uint32_t));
+  file.close();
+  return true;
+}
+
+bool write_busset(const std::string& filename, const BusSet& bus_set) {
+  // Open file and truncate
+  std::ofstream file(filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+  if (!file.is_open()) {
+    LOG_ERROR("write_busset failed to open output file: " + filename);
+    return false;
+  }
+
+  // Create a vector to hold the elements of the via set
+  uint32_t i = 0;
+  std::vector<uint32_t> bus_vector(bus_set.size());
+  for (const auto v : bus_set) {
+    bus_vector[i] = v;
+    ++i;
+  }
+
+  // Write the count and then the via ids
+  uint32_t sz = bus_vector.size();
+  file.write(reinterpret_cast<const char*>(&sz), sizeof(uint32_t));
+  file.write(reinterpret_cast<const char*>(bus_vector.data()), bus_vector.size() * sizeof(uint32_t));
   file.close();
   return true;
 }
@@ -320,6 +345,28 @@ bool read_viaset(const std::string& filename, ViaSet& via_set) {
   return true;
 }
 
+bool read_busset(const std::string& filename, BusSet& bus_set) {
+  // Open file and truncate
+  std::ifstream file(filename, std::ios::in | std::ios::binary);
+  if (!file.is_open()) {
+    LOG_ERROR("read_busset failed to open input file: " + filename);
+    return false;
+  }
+
+  // Read the count and then the via ids
+  uint32_t count = 0;
+  file.read(reinterpret_cast<char*>(&count), sizeof(uint32_t));
+  std::vector<uint32_t> bus_vector(count);
+  file.read(reinterpret_cast<char*>(bus_vector.data()), count * sizeof(uint32_t));
+  file.close();
+
+  // Iterate through the vector of via Ids and add them to the via set
+  for (const auto v : bus_vector) {
+    bus_set.insert(v);
+  }
+  return true;
+}
+
 bool read_access_restrictions(const std::string& filename, AccessRestrictionsMultiMap& access_map) {
   // Open file and truncate
   std::ifstream file(filename, std::ios::in | std::ios::binary);
@@ -501,6 +548,7 @@ bool OSMData::write_to_temp_files(const std::string& tile_dir) {
   // Write the rest of OSMData
   bool status = write_restrictions(tile_dir + restrictions_file, restrictions) &&
                 write_viaset(tile_dir + viaset_file, via_set) &&
+                write_busset(tile_dir + busset_file, bus_set) &&
                 write_access_restrictions(tile_dir + access_restrictions_file, access_restrictions) &&
                 write_bike_relations(tile_dir + bike_relations_file, bike_relations) &&
                 write_way_refs(tile_dir + way_ref_file, way_ref) &&
@@ -543,6 +591,7 @@ bool OSMData::read_from_temp_files(const std::string& tile_dir) {
   bool status =
       read_restrictions(tile_directory + restrictions_file, restrictions) &&
       read_viaset(tile_directory + viaset_file, via_set) &&
+      read_busset(tile_directory + busset_file, bus_set) &&
       read_access_restrictions(tile_directory + access_restrictions_file, access_restrictions) &&
       read_bike_relations(tile_directory + bike_relations_file, bike_relations) &&
       read_way_refs(tile_directory + way_ref_file, way_ref) &&
@@ -610,6 +659,7 @@ void OSMData::cleanup_temp_files(const std::string& tile_dir) {
   remove_temp_file(tile_dir + count_file);
   remove_temp_file(tile_dir + restrictions_file);
   remove_temp_file(tile_dir + viaset_file);
+  remove_temp_file(tile_dir + busset_file);
   remove_temp_file(tile_dir + access_restrictions_file);
   remove_temp_file(tile_dir + bike_relations_file);
   remove_temp_file(tile_dir + way_ref_file);

@@ -51,6 +51,7 @@ DirectedEdgeBuilder::DirectedEdgeBuilder(const OSMWay& way,
   }
 
   set_truck_route(way.truck_route());
+  set_bus_route(way.bus_route());
 
   // Set destination only to true if the reclass_ferry is set to false and either destination only or
   // no thru traffic is set. Adding the reclass_ferry check allows us to know if we should override

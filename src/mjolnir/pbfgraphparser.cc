@@ -683,6 +683,10 @@ public:
     tag_handlers_["truck_route"] = [this]() {
       way_.set_truck_route(tag_.second == "true" ? true : false);
     };
+    tag_handlers_["bus_route"] = [this]() {
+      LOG_INFO("POOP!");
+      way_.set_bus_route(tag_.second == "true" ? true : false);
+    };
     tag_handlers_["hazmat"] = [this]() {
       OSMAccessRestriction restriction;
       restriction.set_type(AccessType::kHazmat);
@@ -2180,7 +2184,7 @@ public:
 
     uint64_t from_way_id = 0;
     bool isRestriction = false, isTypeRestriction = false, hasRestriction = false;
-    bool isRoad = false, isRoute = false, isBicycle = false, isConnectivity = false;
+    bool isRoad = false, isRoute = false, isBusRoute = false, isBicycle = false, isConnectivity = false;
     bool isConditional = false, isProbable = false, has_multiple_times = false;
     uint32_t bike_network_mask = 0;
 
@@ -2204,6 +2208,8 @@ public:
           isRoad = true;
         } else if (tag.second == "bicycle" || tag.second == "mtb") {
           isBicycle = true;
+        } else if (tag.second == "bus") {
+          isBusRoute = true;
         }
       } else if (tag.first == "restriction:conditional") {
         isConditional = true;
@@ -2348,6 +2354,12 @@ public:
           value == "cr" || value == "byway" || value == "scenic" || value == "connector" ||
           value == "county")
         special_network = true;
+    }
+
+    if (isBusRoute && isRoute) {
+      for (const auto& member : members) {
+        osmdata_.bus_set.insert(member.member_id);
+      }
     }
 
     if (isBicycle && isRoute && !network.empty()) {
@@ -3095,6 +3107,7 @@ void PBFGraphParser::ParseRelations(const boost::property_tree::ptree& pt,
                           callback);
   }
   LOG_INFO("Finished with " + std::to_string(osmdata.restrictions.size()) + " simple restrictions");
+  LOG_INFO("Finished with " + std::to_string(osmdata.bus_set.size()) + " bus routes");
   LOG_INFO("Finished with " + std::to_string(osmdata.lane_connectivity_map.size()) +
            " lane connections");
 

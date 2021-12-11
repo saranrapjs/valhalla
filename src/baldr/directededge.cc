@@ -268,6 +268,11 @@ void DirectedEdge::set_truck_route(const bool truck_route) {
   truck_route_ = truck_route;
 }
 
+// Sets bus route flag.
+void DirectedEdge::set_bus_route(const bool bus_route) {
+  bus_route_ = bus_route;
+}
+
 // Sets the number of lanes
 void DirectedEdge::set_lanecount(const uint32_t lanecount) {
   // Make sure we don't exceed max lane count. Also make sure lane count
@@ -605,6 +610,7 @@ json::MapPtr DirectedEdge::json() const {
       {"cycle_lane", to_string(static_cast<CycleLane>(cycle_lane_))},
       {"bike_network", static_cast<bool>(bike_network_)},
       {"truck_route", static_cast<bool>(truck_route_)},
+      {"bus_route", static_cast<bool>(bus_route_)},
       {"lane_count", static_cast<uint64_t>(lanecount_)},
       {"country_crossing", static_cast<bool>(ctry_crossing_)},
       {"sidewalk_left", static_cast<bool>(sidewalk_left_)},

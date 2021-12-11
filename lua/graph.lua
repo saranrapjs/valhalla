@@ -2139,6 +2139,9 @@ function rels_proc (kv, nokeys)
          return 1, kv
        end
        return 0, kv
+     elseif kv["route"] == "bus" then
+       kv["bus_route"] = "true"
+       return 0, kv
      elseif kv["route"] == "bicycle" or kv["route"] == "mtb" then
 
        local bike_mask = 0

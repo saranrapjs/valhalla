@@ -47,6 +47,7 @@ using RestrictionsMultiMap = std::unordered_multimap<uint64_t, OSMRestriction>;
 using ViaSet = std::unordered_set<uint64_t>;
 using AccessRestrictionsMultiMap = std::unordered_multimap<uint64_t, OSMAccessRestriction>;
 using BikeMultiMap = std::unordered_multimap<uint64_t, OSMBike>;
+using BusSet = std::unordered_set<uint64_t>;
 using OSMLaneConnectivityMultiMap = std::unordered_multimap<uint64_t, OSMLaneConnectivity>;
 
 // OSMString map uses the way Id as the key and the name index into UniqueNames as the value
@@ -109,6 +110,9 @@ struct OSMData {
 
   // Stores bike information from the relations.  Indexed by the way Id.
   BikeMultiMap bike_relations;
+
+  // Stores bus information from the relations.  Indexed by the way Id.
+  BusSet bus_set;
 
   // Map that stores an updated ref for a way. This needs to remain a map, since relations
   // update many ways at a time (so we can't move this into OSMWay unless that is mapped by Id).

@@ -895,6 +895,10 @@ void BuildTileSet(const std::string& ways_file,
             directededge.complex_restriction(true);
           }
 
+          if (osmdata.bus_set.find(w.way_id()) != osmdata.bus_set.end()) {
+            directededge.set_bus_route(true);
+          }
+
           // grab all the modes if this way ends at a restriction(s)
           OSMRestriction target_to_res{
               w.way_id()}; // this is our from way id.  to is really our from for to_restrictions.

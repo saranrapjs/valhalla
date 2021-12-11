@@ -509,6 +509,21 @@ public:
   void set_truck_route(const bool truck_route);
 
   /**
+   * Get the bus route flag for this directed edge.
+   * @return  Returns true if part of a bus network/route, false otherwise.
+   */
+  bool bus_route() const {
+    return bus_route_;
+  }
+
+  /**
+   * Set the bus route flag for this directed edge.
+   * @param  bus_route  Bus route flag.
+   */
+  void set_bus_route(const bool bus_route);
+
+
+  /**
    * Get the number of lanes for this directed edge.
    * @return  Returns the number of lanes for this directed edge.
    */
@@ -1149,6 +1164,7 @@ protected:
   uint64_t toll_ : 1;                   // Edge is part of a toll road
   uint64_t roundabout_ : 1;             // Edge is part of a roundabout
   uint64_t truck_route_ : 1;            // Edge that is part of a truck route/network
+  uint64_t bus_route_ : 1;              // Edge that is part of a bus route/network
   uint64_t has_predicted_speed_ : 1;    // Does this edge have a predicted speed records?
 
   // 4th 8-byte word

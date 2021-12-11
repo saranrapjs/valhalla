@@ -78,6 +78,9 @@ constexpr float kLeftSideTurnPenalties[] = {kTPStraight,    kTPUnfavorableSlight
 // Additional stress factor for designated truck routes
 const float kTruckStress = 0.5f;
 
+// Additional stress factor for designated bus routes
+const float kBusStress = 1.0f;
+
 // Cost of traversing an edge with steps. Make this high but not impassible.
 const float kBicycleStepsFactor = 8.0f;
 
@@ -626,7 +629,8 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
   // Special use cases: cycleway, footway, path, living street, track
   if (edge->use() == Use::kCycleway || edge->use() == Use::kFootway || edge->use() == Use::kPath) {
     // Differentiate how segregated the cycleway/path is from pedestrians
-    accommodation_factor = path_cyclelane_factor_[static_cast<uint32_t>(edge->cyclelane())];
+    accommodation_factor = 0.0f;
+    roadway_stress = 0.0f;
   } else if (edge->use() == Use::kMountainBike && type_ == BicycleType::kMountain) {
     // Slightly less reduction than a footway or path because even with a mountain bike
     // these paths can be a little stressful to ride. No traffic though so still favorable
@@ -650,6 +654,11 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
       roadway_stress += kTruckStress;
     }
 
+    // Bus routes add to roadway stress
+    if (edge->bus_route()) {
+      roadway_stress += kBusStress;
+    }
+
     // Add in penalization for road classification (higher class roads are more stress)
     roadway_stress += road_factor_ * kRoadClassFactor[static_cast<uint32_t>(edge->classification())];
 
@@ -667,7 +676,7 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
 
   bool oneway = (edge->reverseaccess() & kVehicularAccess) == 0;
   if (oneway && edge->lanecount() == 1) {
-    accommodation_factor *= use_oneways_;
+    roadway_stress *= use_oneways_;
   }
 
   // Favor bicycle networks slightly
@@ -700,6 +709,9 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
 
   // Compute elapsed time based on speed. Modulate cost with weighting factors.
   float sec = (edge->length() * speedfactor_[bike_speed]);
+  if (edge->use() == Use::kCycleway || edge->use() == Use::kFootway || edge->use() == Use::kPath) {
+    factor = 0.0f;
+  }
   return {shortest_ ? edge->length() : sec * factor, sec};
 }
 
@@ -851,7 +863,6 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
   pbf_costing_options->set_costing(Costing::bicycle);
   pbf_costing_options->set_name(Costing_Enum_Name(pbf_costing_options->costing()));
   auto json_costing_options = rapidjson::get_child_optional(doc, costing_options_key.c_str());
-  LOG_INFO(costing_options_key);
   if (json_costing_options) {
     ParseSharedCostOptions(*json_costing_options, pbf_costing_options);
     ParseBaseCostOptions(*json_costing_options, pbf_costing_options, kBaseCostOptsConfig);
@@ -916,7 +927,6 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
         rapidjson::get_optional<uint32_t>(*json_costing_options, "/bss_return_penalty")
             .get_value_or(kDefaultBssPenalty)));
   } else {
-    LOG_INFO("thereeeee");
     // Set pbf values to defaults
     SetDefaultBaseCostOptions(pbf_costing_options, kBaseCostOptsConfig);
 

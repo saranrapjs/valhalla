@@ -134,6 +134,7 @@ message CostingOptions {
   optional bool exclude_cash_only_tolls = 76;
   optional uint32 restriction_probability = 77;
   optional float use_oneways = 78;
+  optional float use_bikepaths = 79;
 
   // these are not specified directly by the user but they get filled in as the request is parsed and fulfilled
   optional Costing costing = 90;

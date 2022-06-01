@@ -32,7 +32,8 @@ constexpr float kDefaultBssPenalty = 0.0f;    // Seconds
 
 // Other options
 constexpr float kDefaultUseRoad = 0.25f;          // Factor between 0 and 1
-constexpr float kDefaultUseOneways = 0.0f;
+constexpr float kDefaultUseOneways = 1.0f;
+constexpr float kDefaultUseBikepaths = 1.0f;
 constexpr float kDefaultAvoidBadSurfaces = 0.25f; // Factor between 0 and 1
 constexpr float kDefaultUseLivingStreets = 0.5f;  // Factor between 0 and 1
 const std::string kDefaultBicycleType = "Hybrid"; // Bicycle type
@@ -205,7 +206,8 @@ constexpr float kBicycleNetworkFactor = 0.95f;
 // Valid ranges and defaults
 constexpr ranged_default_t<float> kUseRoadRange{0.0f, kDefaultUseRoad, 1.0f};
 constexpr ranged_default_t<float> kUseHillsRange{0.0f, kDefaultUseHills, 1.0f};
-constexpr ranged_default_t<float> kUseOnewaysRange{kDefaultUseOneways, 1.0f};
+constexpr ranged_default_t<float> kUseOnewaysRange{0.0f, kDefaultUseOneways, 1.0f};
+constexpr ranged_default_t<float> kUseBikepathsRange{0.0f, kDefaultUseBikepaths, 1.0f};
 constexpr ranged_default_t<float> kAvoidBadSurfacesRange{0.0f, kDefaultAvoidBadSurfaces, 1.0f};
 
 constexpr ranged_default_t<float> kBSSCostRange{0, kDefaultBssCost, kMaxPenalty};
@@ -385,6 +387,7 @@ public:
   std::vector<float> speedfactor_; // Cost factors based on speed in kph
   float use_roads_;                // Preference of using roads between 0 and 1
   float use_oneways_;              // Preference towards one-ways between 0 and 1
+  float use_bikepaths_;            // Preference towards bike paths between 0 and 1
   float avoid_roads_;              // Inverse of use roads
   float road_factor_;              // Road factor based on use_roads_
   float sidepath_factor_;          // Factor to use when use_sidepath is set on an edge
@@ -466,6 +469,8 @@ BicycleCost::BicycleCost(const CostingOptions& costing_options)
   minimal_surface_penalized_ = kWorstAllowedSurface[static_cast<uint32_t>(type_)];
   worst_allowed_surface_ = avoid_bad_surfaces_ == 1.0f ? minimal_surface_penalized_ : Surface::kPath;
   use_oneways_ = 1.0f - costing_options.use_oneways();
+  use_bikepaths_ = costing_options.use_bikepaths();
+  LOG_INFO("from pbf " + std::to_string(use_bikepaths_));
 
   // Set the surface speed factors for the bicycle type.
   if (type_ == BicycleType::kRoad) {
@@ -667,16 +672,16 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
     // use it here. High speed penalized edges so we want the "default" speed rather than a traffic
     // influenced speed anyway.
     roadway_stress *= speedpenalty_[edge->speed()];
+
+    bool oneway = (edge->reverseaccess() & kVehicularAccess) == 0;
+    if (oneway && edge->lanecount() == 1) {
+      roadway_stress *= use_oneways_;
+    }
   }
 
   // We want to try and avoid roads that specify to use a cycling path to the side
   if (edge->use_sidepath()) {
     accommodation_factor += sidepath_factor_;
-  }
-
-  bool oneway = (edge->reverseaccess() & kVehicularAccess) == 0;
-  if (oneway && edge->lanecount() == 1) {
-    roadway_stress *= use_oneways_;
   }
 
   // Favor bicycle networks slightly
@@ -709,9 +714,11 @@ Cost BicycleCost::EdgeCost(const baldr::DirectedEdge* edge,
 
   // Compute elapsed time based on speed. Modulate cost with weighting factors.
   float sec = (edge->length() * speedfactor_[bike_speed]);
+
   if (edge->use() == Use::kCycleway || edge->use() == Use::kFootway || edge->use() == Use::kPath) {
-    factor = 0.0f;
+    factor *= use_bikepaths_;
   }
+
   return {shortest_ ? edge->length() : sec * factor, sec};
 }
 
@@ -879,6 +886,11 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
         kUseOnewaysRange(rapidjson::get_optional<float>(*json_costing_options, "/use_oneways")
                           .get_value_or(kDefaultUseOneways)));
 
+    // use_bikepaths
+    pbf_costing_options->set_use_bikepaths(
+        kUseBikepathsRange(rapidjson::get_optional<float>(*json_costing_options, "/use_bikepaths")
+                          .get_value_or(kDefaultUseBikepaths)));
+
     // use_hills
     pbf_costing_options->set_use_hills(
         kUseHillsRange(rapidjson::get_optional<float>(*json_costing_options, "/use_hills")
@@ -931,7 +943,8 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
     SetDefaultBaseCostOptions(pbf_costing_options, kBaseCostOptsConfig);
 
     pbf_costing_options->set_use_roads(kDefaultUseRoad);
-    pbf_costing_options->set_use_oneways(1.0f);
+    pbf_costing_options->set_use_oneways(kDefaultUseOneways);
+    pbf_costing_options->set_use_bikepaths(kDefaultUseBikepaths);
     pbf_costing_options->set_use_hills(kDefaultUseHills);
     pbf_costing_options->set_avoid_bad_surfaces(kDefaultAvoidBadSurfaces);
     pbf_costing_options->set_transport_type(kDefaultBicycleType);

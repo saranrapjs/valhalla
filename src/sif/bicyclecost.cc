@@ -880,7 +880,7 @@ void ParseBicycleCostOptions(const rapidjson::Document& doc,
   ParseBaseCostOptions(json, c, kBaseCostOptsConfig);
   JSON_PBF_RANGED_DEFAULT(co, kUseRoadRange, json, "/use_roads", use_roads);
   JSON_PBF_RANGED_DEFAULT(co, kUseOnewaysRange, json, "/use_oneways", use_oneways);
-  JSON_PBF_RANGED_DEFAULT(co, kDefaultUseBikepaths, json, "/use_bikepaths", use_bikepaths);
+  JSON_PBF_RANGED_DEFAULT(co, kUseBikepathsRange, json, "/use_bikepaths", use_bikepaths);
   JSON_PBF_RANGED_DEFAULT(co, kUseHillsRange, json, "/use_hills", use_hills);
   JSON_PBF_RANGED_DEFAULT(co, kAvoidBadSurfacesRange, json, "/avoid_bad_surfaces",
                           avoid_bad_surfaces);

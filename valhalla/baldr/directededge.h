@@ -508,21 +508,6 @@ public:
    */
   void set_bike_network(const bool bike_network);
 
-
-  /**
-   * Get the bus route flag for this directed edge.
-   * @return  Returns true if part of a bus network/route, false otherwise.
-   */
-  bool bus_route() const {
-    return bus_route_;
-  }
-
-  /**
-   * Set the bus route flag for this directed edge.
-   * @param  bus_route  Bus route flag.
-   */
-  void set_bus_route(const bool bus_route);
-
   /**
    * Get the truck route flag for this directed edge.
    * @return  Returns true if part of a truck network/route, false otherwise.

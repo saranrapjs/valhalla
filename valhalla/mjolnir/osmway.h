@@ -1434,6 +1434,22 @@ struct OSMWay {
   }
 
   /**
+   * Set bus_route flag.
+   * @param  bus_route   Is there a sidewalk on the left?
+   */
+  void set_bus_route(const bool bus_route) {
+    bus_route_ = bus_route;
+  }
+
+  /**
+   * Get the set_bus_route flag.
+   * @return  Returns set_bus_route flag.
+   */
+  bool bus_route() const {
+    return bus_route_;
+  }
+
+  /**
    * Sets the exit tag.
    * @param  exit       Exit flag.
    */
@@ -1795,6 +1811,7 @@ struct OSMWay {
   uint32_t sidewalk_right_ : 1;
   uint32_t sidewalk_left_ : 1;
   uint32_t sac_scale_ : 3;
+  uint32_t bus_route_ : 1;
 
   // Classification
   uint32_t road_class_ : 3; // Importance of the road/path

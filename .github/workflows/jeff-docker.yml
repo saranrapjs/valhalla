@@ -1,0 +1,38 @@
+#
+name: Create and publish a Docker image
+
+# Configures this workflow to run every time a change is pushed to the branch called `release`.
+on:
+  push:
+    branches: ['bike-tweaks-new']
+
+# Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
+jobs:
+  build_image:
+    name: Manual docker image build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+        fetch-depth: 0
+
+    - name: Log in to GitHub Docker Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build latest image
+      run: |
+        docker build -t ghcr.io/saranrapjs/valhalla:biketweaks .
+        docker push ghcr.io/saranrapjs/valhalla:biketweaks

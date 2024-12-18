@@ -13,7 +13,6 @@
 #include <cxxopts.hpp>
 
 #include "baldr/rapidjson_utils.h"
-#include "config.h"
 #include "filesystem.h"
 #include "loki/search.h"
 #include "midgard/logging.h"
@@ -125,10 +124,10 @@ void work(const boost::property_tree::ptree& config, std::promise<results_t>& pr
 int main(int argc, char** argv) {
   const auto program = filesystem::path(__FILE__).stem().string();
   // args
-  boost::property_tree::ptree pt;
   size_t batch, isolated, radius;
   bool extrema = false;
   std::vector<std::string> input_files;
+  boost::property_tree::ptree config;
 
   try {
     // clang-format off
@@ -147,7 +146,7 @@ int main(int argc, char** argv) {
       ("j,concurrency", "Number of threads to use. Defaults to all threads.", cxxopts::value<uint32_t>())
       ("b,batch", "Number of locations to group together per search", cxxopts::value<size_t>(batch)->default_value("1"))
       ("e,extrema", "Show the input locations of the extrema for a given statistic", cxxopts::value<bool>(extrema)->default_value("false"))
-      ("i,reach", "How many edges need to be reachable before considering it as connected to the larger network", cxxopts::value<size_t>(isolated))
+      ("i,reach", "How many edges need to be reachable before considering it as connected to the larger network", cxxopts::value<size_t>(isolated)->default_value("50"))
       ("r,radius", "How many meters to search away from the input location", cxxopts::value<size_t>(radius)->default_value("0"))
       ("costing", "Which costing model to use.", cxxopts::value<std::string>(costing_str)->default_value("auto"))
       ("input_files", "positional arguments", cxxopts::value<std::vector<std::string>>(input_files));
@@ -156,13 +155,13 @@ int main(int argc, char** argv) {
     options.parse_positional({"input_files"});
     options.positional_help("LOCATIONS.TXT");
     auto result = options.parse(argc, argv);
-    if (!parse_common_args(program, options, result, pt, "loki.logging"))
+    if (!parse_common_args(program, options, result, config, "loki.logging"))
       return EXIT_SUCCESS;
 
     if (!result.count("input_files")) {
-      throw cxxopts::OptionException("Input file is required\n\n" + options.help());
+      throw cxxopts::exceptions::exception("Input file is required\n\n" + options.help());
     }
-  } catch (cxxopts::OptionException& e) {
+  } catch (cxxopts::exceptions::exception& e) {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
   } catch (std::exception& e) {
@@ -189,7 +188,7 @@ int main(int argc, char** argv) {
         throw std::runtime_error("Latitude must be in the range [-90, 90] degrees");
       }
       float lon = valhalla::midgard::circular_range_clamp<float>(std::stof(parts[1]), -180, 180);
-      valhalla::midgard::PointLL ll(lat, lon);
+      valhalla::midgard::PointLL ll(lon, lat);
       valhalla::baldr::Location loc(ll);
       loc.min_inbound_reach_ = loc.min_outbound_reach_ = isolated;
       loc.radius_ = radius;
@@ -207,10 +206,10 @@ int main(int argc, char** argv) {
 
   // start up the threads
   std::list<std::thread> pool;
-  const auto num_threads = pt.get<uint32_t>("mjolnir.concurrency");
+  const auto num_threads = config.get<uint32_t>("mjolnir.concurrency");
   std::vector<std::promise<results_t>> pool_results(num_threads);
   for (size_t i = 0; i < num_threads; ++i) {
-    pool.emplace_back(work, std::cref(pt), std::ref(pool_results[i]));
+    pool.emplace_back(work, std::cref(config), std::ref(pool_results[i]));
   }
 
   // let the threads finish up

@@ -31,7 +31,7 @@ Because the locate service is designed to work in tandem with the route service 
 
 If a request has been named using the optional `id` key, then this `id` key and value will be echoed in the JSON response object.
 
-The locate results are returned as a JSON array, with one JSON object per input location in the order specified. In `verbose` mode details about the streets and intersections includding mode of travel access, names, way ids, shape, side of street as well as the closest point to the input along these features will be returned. If `verbose` was not enabled only the closest point, way id and side of street will be returned. A warnings array may also be included. This array may contain warning objects informing about deprecated request parameters, clamped values etc. | 
+The locate results are returned as a JSON array, with one JSON object per input location in the order specified. In `verbose` mode details about the streets and intersections including mode of travel access, names, way ids, shape, side of street as well as the closest point to the input along these features will be returned. If `verbose` was not enabled only the closest point, way id and side of street will be returned. A warnings array may also be included. This array may contain warning objects informing about deprecated request parameters, clamped values etc. | 
 
 Here are some sample results with `verbose` set to `false`:
 
@@ -334,8 +334,16 @@ Here are some sample results with `verbose` set to `true`:
 ```
 
 ### Attribute Descriptions for Responses
+#### Edge
+##### Verbose 
 
-TODO:
+| Key | Description |
+| :------------------ | :----------- |
+| `access_restrictions` | A list of access restrictions that apply to the edge. Each entry contains information about its access mode mask, value, and more |
+| `edge_info` | Contains information stored in the edge's `EdgeInfo` struct |
+| `edge_info.conditional_speed_limits` | The key describes the time window during which the speed limit applies, the value is the limit |
+| `edge_info.speed_limit` | The edge's speed limit |
+| `edge_info.levels` | An array containing the edge's levels as derived from the `level=*` tag. Values are either numeric, or another array containing two elements, which denote the start and end of a range (inclusive) |
 
 ### HTTP status codes and error messages
 

@@ -10,7 +10,6 @@ using namespace valhalla;
 using namespace valhalla::midgard;
 using namespace valhalla::baldr;
 using namespace valhalla::odin;
-using namespace valhalla::thor;
 
 namespace {
 
@@ -190,6 +189,26 @@ void serialize_edges(const AttributesController& controller,
       if (controller(kEdgeSpeed)) {
         writer("speed", static_cast<uint64_t>(std::round(edge.speed() * scale)));
       }
+      if (controller(kEdgeCountryCrossing)) {
+        writer("country_crossing", static_cast<bool>(edge.country_crossing()));
+      }
+      if (controller(kEdgeForward)) {
+        writer("forward", static_cast<bool>(edge.forward()));
+      }
+      if (controller(kEdgeLevels)) {
+        if (edge.levels_size()) {
+          writer.start_array("levels");
+          writer.set_precision(edge.level_precision());
+          for (const auto& level : edge.levels()) {
+            writer.start_array();
+            writer(static_cast<float>(level.start()));
+            writer(static_cast<float>(level.end()));
+            writer.end_array();
+          }
+          writer.end_array();
+          writer.set_precision(3);
+        }
+      }
       if (controller(kEdgeLength)) {
         writer.set_precision(3);
         writer("length", edge.length_km() * scale);
@@ -309,6 +328,7 @@ void serialize_edges(const AttributesController& controller,
         if (controller(kNodeElapsedTime)) {
           writer.set_precision(3);
           writer("elapsed_time", node.cost().elapsed_cost().seconds());
+          writer("elapsed_cost", node.cost().elapsed_cost().cost());
         }
         if (controller(kNodeAdminIndex)) {
           writer("admin_index", static_cast<uint64_t>(node.admin_index()));
@@ -494,6 +514,20 @@ void append_trace_info(
 
   // Add edges
   serialize_edges(controller, options, trip_path, writer);
+
+  // Add elevation at the specified interval
+  if (options.elevation_interval() > 0.0f) {
+    float unit_factor = options.units() == Options::miles ? kFeetPerMeter : 1.0f;
+    float interval = options.elevation_interval();
+    writer.set_precision(1);
+    writer("elevation_interval", interval * unit_factor);
+    writer.start_array("elevation");
+    auto elevation = tyr::get_elevation(trip_path, interval);
+    for (const auto& h : elevation) {
+      writer(h * unit_factor);
+    }
+    writer.end_array();
+  }
 
   // Add matched points, if requested
   if (controller.category_attribute_enabled(kMatchedCategory) && !match_results.empty()) {

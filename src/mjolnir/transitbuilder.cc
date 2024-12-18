@@ -3,12 +3,10 @@
 
 #include <fstream>
 #include <future>
-#include <iostream>
 #include <list>
 #include <mutex>
 #include <thread>
 #include <tuple>
-#include <unordered_map>
 #include <vector>
 
 #include <boost/algorithm/string.hpp>
@@ -44,7 +42,7 @@ struct OSMConnectionEdge {
   std::vector<std::string> names;
   std::vector<PointLL> shape;
   std::vector<std::string> tagged_values;
-  std::vector<std::string> pronunciations;
+  std::vector<std::string> linguistics;
 };
 
 // Struct to hold stats information during each threads work
@@ -167,8 +165,7 @@ void ConnectToGraph(GraphTileBuilder& tilebuilder_local,
       bool added = false;
       uint32_t edge_info_offset =
           tilebuilder_local.AddEdgeInfo(0, conn.osm_node, endnode, conn.wayid, 0, 0, 0, conn.shape,
-                                        conn.names, conn.tagged_values, conn.pronunciations, 0,
-                                        added);
+                                        conn.names, conn.tagged_values, conn.linguistics, 0, added);
       directededge.set_edgeinfo_offset(edge_info_offset);
       directededge.set_forward(true);
       tilebuilder_local.directededges().emplace_back(std::move(directededge));
@@ -264,8 +261,8 @@ void ConnectToGraph(GraphTileBuilder& tilebuilder_local,
         std::reverse(r_shape.begin(), r_shape.end());
         uint32_t edge_info_offset =
             tilebuilder_transit.AddEdgeInfo(0, conn.stop_node, conn.osm_node, conn.wayid, 0, 0, 0,
-                                            r_shape, conn.names, conn.tagged_values,
-                                            conn.pronunciations, 0, added);
+                                            r_shape, conn.names, conn.tagged_values, conn.linguistics,
+                                            0, added);
         LOG_DEBUG("Add conn from stop to OSM: ei offset = " + std::to_string(edge_info_offset));
         directededge.set_edgeinfo_offset(edge_info_offset);
         directededge.set_forward(true);
@@ -403,6 +400,7 @@ std::vector<OSMConnectionEdge> MakeConnections(const graph_tile_ptr& local_tile,
     if (!closest_edge) {
       LOG_WARN("Could not find connection point for in/egress near: " +
                std::to_string(egress_ll.second) + "," + std::to_string(egress_ll.first));
+      continue;
     }
 
     // TODO: if the point we found is further away than the tile edge then there could be a better
@@ -652,7 +650,7 @@ void TransitBuilder::Build(const boost::property_tree::ptree& pt) {
   }
 
   auto t2 = std::chrono::high_resolution_clock::now();
-  uint32_t secs = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+  [[maybe_unused]] uint32_t secs = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
   LOG_INFO("Finished - TransitBuilder took " + std::to_string(secs) + " secs");
 }
 

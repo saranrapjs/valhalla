@@ -34,5 +34,5 @@ jobs:
 
     - name: Build latest image
       run: |
-        docker build -t ghcr.io/saranrapjs/valhalla:biketweaks .
+        docker build -f docker/Dockerfile -t ghcr.io/saranrapjs/valhalla:biketweaks .
         docker push ghcr.io/saranrapjs/valhalla:biketweaks

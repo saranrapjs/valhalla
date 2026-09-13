@@ -8,6 +8,7 @@
    * FIXED: update final path distance in recosting for `CostMatrix` [#6258](https://github.com/valhalla/valhalla/pull/6258)
    * FIXED: Set `edge_index` for all interpolated points in `/trace_attributes` [#6278](https://github.com/valhalla/valhalla/pull/6278)
 * **Enhancement**
+   * UPDATED: timezone database to 2026d [#5](https://github.com/saranrapjs/valhalla/pull/5)
    * CHANGED: move `GraphTile::GetTileId` to `GraphId::FromTilePath` as a static factory ctor [#6237](https://github.com/valhalla/valhalla/pull/6237)
    * CHANGED: use `filtered_edges` in CostMatrix's second pass [#6236](https://github.com/valhalla/valhalla/pull/6236)
    * ADDED: `cost` in verbose matrix output [#6249](https://github.com/valhalla/valhalla/pull/6249)
